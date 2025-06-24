@@ -66,5 +66,9 @@
           };
         };
       };
+
+      nixosModules.default = { config, lib, pkgs, ... }: {
+        nixpkgs.overlays = [ self.overlays.default ];
+      };
     };
 }
