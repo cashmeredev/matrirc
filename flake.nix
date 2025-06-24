@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
-    devenv.url = "github:cachix/devenv";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -16,33 +15,40 @@
     {
       self,
       nixpkgs,
-      devenv,
       flake-utils,
       ...
     }@inputs:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs.legacyPackages.${system} {
+          overlays = [ self.overlays.default ];
+        };
       in
       {
-        packages.matrirc = pkgs.rustPlatform.buildRustPackage {
+        packages.matrirc = pkgs.matrirc;
+        packages.default = self.packages.${system}.matrirc;
+      }
+    )
+    // {
+      overlays.default = final: prev: {
+        matrirc = final.rustPlatform.buildRustPackage {
           pname = "matrirc";
           version = "0.1.0";
 
-          src = pkgs.lib.cleanSource ./.;
+          src = final.lib.cleanSource ./.;
 
           cargoLock = {
             lockFile = ./Cargo.lock;
           };
 
-          nativeBuildInputs = with pkgs; [
+          nativeBuildInputs = with final; [
             pkg-config
             gcc
             gnumake
           ];
 
-          buildInputs = with pkgs; [
+          buildInputs = with final; [
             openssl
             zlib
             zlib.dev
@@ -50,62 +56,16 @@
             sqlite.dev
           ];
 
-          SQLITE3_LIB_DIR = "${pkgs.sqlite.out}/lib";
-          SQLITE3_INCLUDE_DIR = "${pkgs.sqlite.dev}/include";
-          PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          SQLITE3_LIB_DIR = "${final.sqlite.out}/lib";
+          SQLITE3_INCLUDE_DIR = "${final.sqlite.dev}/include";
+          PKG_CONFIG_PATH = "${final.openssl.dev}/lib/pkgconfig";
 
-          meta = with pkgs.lib; {
+          meta = with final.lib; {
             description = "Matrirc application";
             license = licenses.mit;
             maintainers = [ ];
           };
         };
-
-        packages.default = self.packages.${system}.matrirc;
-
-        devShells.default = devenv.lib.mkShell {
-          inherit inputs pkgs;
-          modules = [
-            {
-              packages = with pkgs; [
-                git
-                openssl
-                pkg-config
-                gcc
-                gnumake
-                zlib
-                zlib.dev
-                sqlite
-                sqlite.dev
-              ];
-
-              languages.rust.enable = true;
-
-              scripts.hello.exec = ''
-                echo hello from $GREET
-              '';
-
-              env = {
-                GREET = "devenv";
-                SQLITE3_LIB_DIR = "${pkgs.sqlite.out}/lib";
-                SQLITE3_INCLUDE_DIR = "${pkgs.sqlite.dev}/include";
-              };
-
-              enterShell = ''
-                hello
-                git --version
-              '';
-
-              enterTest = ''
-                echo "Running tests"
-                git --version | grep --color=auto "${pkgs.git.version}"
-              '';
-            }
-          ];
-        };
-
-        packages.devenv-up = self.devShells.${system}.default.config.procfileScript;
-        packages.devenv-test = self.devShells.${system}.default.config.test;
-      }
-    );
+      };
+    };
 }
