@@ -29,8 +29,7 @@
         packages.matrirc = pkgs.matrirc;
         packages.default = self.packages.${system}.matrirc;
       }
-    )
-    // {
+    ) // {
       overlays.default = final: prev: {
         matrirc = final.rustPlatform.buildRustPackage {
           pname = "matrirc";
