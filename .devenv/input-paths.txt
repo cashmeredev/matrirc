@@ -1,0 +1,7 @@
+/home/sakura/projects/matrirc/.devenv/flake.json
+/home/sakura/projects/matrirc/.devenv.flake.nix
+/home/sakura/projects/matrirc/.env
+/home/sakura/projects/matrirc/devenv.local.nix
+/home/sakura/projects/matrirc/devenv.lock
+/home/sakura/projects/matrirc/devenv.nix
+/home/sakura/projects/matrirc/devenv.yaml
